@@ -58,29 +58,29 @@ public class ModuloRouter implements Router, Comparable<Router> {
         this.priority = url.getParameter(Constants.PRIORITY_KEY, 0);
         this.dividend = url.getParameter(DIVIDEND, 0);
         try {
-            String rule = url.getParameterAndDecoded(Constants.RULE_KEY);
-            if (rule == null || rule.trim().length() == 0) {
+            String rules = url.getParameterAndDecoded(Constants.RULE_KEY);
+            if (rules == null || rules.trim().length() == 0) {
                 throw new IllegalArgumentException("Illegal route rule!");
             }
             //取模规则列表
-            String[] strArr = rule.split("=>");
+            String[] ruleArr = rules.split("=>");
 
             List<ModuloMatchPair> _moduloMatchPairs = new ArrayList<ModuloMatchPair>();
-            for (String whenRule : strArr) {
+            for (String rule : ruleArr) {
                 Integer modulo = null;
 
-                Map<String, MatchPair> when = StringUtils.isBlank(whenRule) || "true".equals(whenRule) ? new HashMap<String, MatchPair>() : parseRule(whenRule);
-                if (when.containsKey(MODULO)) {
-                    Set<String> set = when.get(MODULO).matches;
+                Map<String, MatchPair> condition = StringUtils.isBlank(rule) || "true".equals(rule) ? new HashMap<String, MatchPair>() : parseRule(rule);
+                if (condition.containsKey(MODULO)) {
+                    Set<String> set = condition.get(MODULO).matches;
                     Iterator<String> it = set.iterator();
                     while (it.hasNext()) {
                         modulo = Integer.parseInt(it.next());
                     }
-                    when.remove(MODULO);
+                    condition.remove(MODULO);
                 } else {
                     continue;
                 }
-                _moduloMatchPairs.add(new ModuloMatchPair(when, modulo));
+                _moduloMatchPairs.add(new ModuloMatchPair(condition, modulo));
             }
 
             this.moduloMatchPairs = _moduloMatchPairs;
