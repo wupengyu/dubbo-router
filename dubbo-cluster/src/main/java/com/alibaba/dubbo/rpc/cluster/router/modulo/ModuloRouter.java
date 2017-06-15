@@ -32,21 +32,30 @@ public class ModuloRouter implements Router, Comparable<Router> {
 
     private final URL url;
 
+    //优先级
     private final int priority;
 
+    //匹配条件
     private final List<ModuloMatchPair> moduloMatchPairs;
 
+    //指定参数对应的类名
+    private final String argumentClassName;
 
-    /**
-     * 用于取模的被除数
-     */
+    //指定参数所对应的属性名称
+    private final String argumentPropertyName;
+
+    //用于取模的被除数
     private final int dividend;
 
-    private final String splitTableKye = "com.wpy.SplitTableRouterId";
+    //常量
+    public static final String DIVIDEND = "dividend";
 
-    private final String DIVIDEND = "dividend";
+    public static final String MODULO = "modulo";
 
-    private final String MODULO = "modulo";
+    public static final String ARGUMENT_CLASS = "argumentClass";
+
+    public static final String ARGUMENT_PROPERTY = "argumentProperty";
+
 
     /**
      * 初始化
@@ -56,12 +65,31 @@ public class ModuloRouter implements Router, Comparable<Router> {
     public ModuloRouter(URL url) {
         this.url = url;
         this.priority = url.getParameter(Constants.PRIORITY_KEY, 0);
-        this.dividend = url.getParameter(DIVIDEND, 0);
+
         try {
+            int dividend = url.getParameter(DIVIDEND, 0);
+            if(dividend == 0 ){
+                throw new IllegalArgumentException("Illegal modulo route dividend!");
+            }
+            this.dividend = dividend;
+
+            String argumentClassName = url.getParameter(ARGUMENT_CLASS, "");
+            if (argumentClassName == null || argumentClassName.trim().length() == 0) {
+                throw new IllegalArgumentException("Illegal modulo route argumentClassName!");
+            }
+            this.argumentClassName = argumentClassName;
+
+            String argumentPropertyName = url.getParameter(ARGUMENT_PROPERTY, "");
+            if (argumentPropertyName == null || argumentPropertyName.trim().length() == 0) {
+                throw new IllegalArgumentException("Illegal modulo route argumentPropertyName!");
+            }
+            this.argumentPropertyName = argumentPropertyName;
+
             String rules = url.getParameterAndDecoded(Constants.RULE_KEY);
             if (rules == null || rules.trim().length() == 0) {
                 throw new IllegalArgumentException("Illegal route rule!");
             }
+
             //取模规则列表
             String[] ruleArr = rules.split("=>");
 
@@ -94,42 +122,59 @@ public class ModuloRouter implements Router, Comparable<Router> {
     }
 
     public <T> List<Invoker<T>> route(List<Invoker<T>> invokers, URL url, Invocation invocation) throws RpcException {
-        Object[] arguments = invocation.getArguments();
-        if (arguments == null || arguments.length == 0) {
-            logger.error("dubbo.moduloRouter : method【" + invocation.getMethodName() + "】 do not have route param");
-            return null;
-        }
-
-        //取参数
-        Class<?>[] parameterType = invocation.getParameterTypes();
-        Integer index = null;
-        for (int i = 0; i < parameterType.length; i++) {
-            if (parameterType[i].getName().equals(splitTableKye)) {
-                index = i;
-            }
-        }
-        if (index == null) {
+        //判空处理
+        if (invokers == null || invokers.size() == 0 || invocation == null || invocation.getArguments() == null ||
+                invocation.getParameterTypes() == null) {
             return invokers;
         }
 
-        Object obj = arguments[index];
-        Integer id = (Integer) getFieldValueByName("id", obj);
-        int modulo = id % dividend;
-
-        //按照路由规则进行过滤
         List<Invoker<T>> result = new ArrayList<Invoker<T>>();
-        for (Invoker<T> invoker : invokers) {
-            for (ModuloMatchPair moduloMatchPair : moduloMatchPairs) {
-                if (moduloMatchPair.isMatch(modulo, invoker.getUrl())) {
-                    result.add(invoker);
+
+        try {
+            //找到路由指定参数对应的位置
+            Class<?>[] parameterType = invocation.getParameterTypes();
+            if (parameterType == null || parameterType.length == 0) {
+                return result;
+            }
+            Integer index = null;
+            for (int i = 0; i < parameterType.length; i++) {
+                if (parameterType[i].getName().equals(argumentClassName)) {
+                    index = i;
                     break;
                 }
             }
-        }
 
-        if (CollectionUtils.isEmpty(result)) {
-            logger.error("dubbo.moduloRouter : 没有匹配上的provider.");
-            return null;
+            //找不到该参数则返回所有invoker
+            if (index == null) {
+                return invokers;
+            }
+
+            //取到路由指定参数的数值进行取模
+            Object[] arguments = invocation.getArguments();
+            if (arguments.length == 0) {
+                return result;
+            }
+            Integer argument = (Integer) getFieldValueByName(argumentPropertyName, arguments[index]);
+
+            //计算得到模
+            int modulo = argument % dividend;
+
+            //按照路由规则进行过滤
+            for (Invoker<T> invoker : invokers) {
+                for (ModuloMatchPair moduloMatchPair : moduloMatchPairs) {
+                    if (moduloMatchPair.isMatch(modulo, invoker.getUrl())) {
+                        result.add(invoker);
+                        break;
+                    }
+                }
+            }
+
+            if (CollectionUtils.isEmpty(result))
+                logger.error("dubbo.moduloRouter : 没有匹配上的provider.");
+
+            return result;
+        } catch (Throwable t) {
+            logger.error("Failed to execute modulo router rule: " + getUrl() + ", invokers: " + invokers + ", cause: " + t.getMessage(), t);
         }
 
         return result;
@@ -239,6 +284,11 @@ public class ModuloRouter implements Router, Comparable<Router> {
         return true;
     }
 
+    /**
+     * 按照优先级进行排序
+     * @param o
+     * @return
+     */
     public int compareTo(Router o) {
         if (o == null || o.getClass() != ModuloRouter.class) {
             return 1;
@@ -249,7 +299,7 @@ public class ModuloRouter implements Router, Comparable<Router> {
 
 
     /**
-     * 取模条件
+     * URL条件匹配类
      */
     private static final class MatchPair {
         final Set<String> matches = new HashSet<String>();
@@ -272,11 +322,11 @@ public class ModuloRouter implements Router, Comparable<Router> {
     }
 
     /**
-     * 取模规则匹配类
+     * 取模匹配类
      */
     private static final class ModuloMatchPair {
         /**
-         * 匹配条件列表
+         * URL匹配条件列表
          */
         private final Map<String, MatchPair> condition;
 
@@ -291,6 +341,10 @@ public class ModuloRouter implements Router, Comparable<Router> {
         }
 
         public boolean isMatch(int _modulo, URL url) {
+            if (url == null) {
+                return false;
+            }
+
             if (modulo != _modulo) {
                 return false;
             }
@@ -302,13 +356,4 @@ public class ModuloRouter implements Router, Comparable<Router> {
 
     }
 
-    public static void main(String[] args) {
-        String rule = "host = 127.0.0.1 & port = 8080 & modulo = 0 => host = 127.0.0.2 & port = 8080 & modulo = 1 => host = 127.0.0.3 & port = 8080 & modulo = 2";
-        HashMap<String, String> parameters = new HashMap<String, String>();
-        parameters.put("rule", rule);
-        parameters.put("dividend", "2");
-        URL url = new URL("router", "", "", "192.168.0.1", 8080, "com.wpy.demo", parameters);
-        ModuloRouter moduloRouter = new ModuloRouter(url);
-
-    }
 }
