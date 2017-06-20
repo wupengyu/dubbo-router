@@ -28,54 +28,56 @@ public class ModuloRouterTest {
     /**
      * 在url添加路由器所需参数
      */
-    private URL getRouteUrl(String rule, String argumentClass, String argumentProperty, Integer dividend) {
+    private URL getRouteUrl(String rule, String divisorArgumentName, Integer dividend) {
         //规则
         URL url = rule == null ? SCRIPT_URL : SCRIPT_URL.addParameterAndEncoded(Constants.RULE_KEY, rule);
-        //参数类名
-        url = argumentClass == null ? url : url.addParameterAndEncoded(ModuloRouter.ARGUMENT_CLASS, argumentClass);
         //参数属性名
-        url = argumentProperty == null ? url : url.addParameterAndEncoded(ModuloRouter.ARGUMENT_PROPERTY, argumentProperty);
+        url = divisorArgumentName == null ? url : url.addParameterAndEncoded(ModuloRouter.DIVISOR_ARGUMENT_NAME, divisorArgumentName);
         //被除数
         url = dividend == null ? url : url.addParameter(ModuloRouter.DIVIDEND, dividend);
         return url;
     }
 
     /**
-     * 测试返回空list
+     * RpcInvocation 或 参数 为 Null 返回原有invokers
      */
     @Test
-    public void testRoute_ReturnEmpty() {
+    public void testRoute_NullParam() {
         //本条路由条件 ip=本机ip, port=20880, modulo=1，dividend=2;
-        Router router = new ModuloRouterFactory().getRouter(getRouteUrl("host = " + NetUtils.getLocalHost() + " & modulo = 1",
-                ModuloRouterArgument.class.getName(), ModuloRouterArgument.class.getDeclaredFields()[0].getName(), 2));
+        Router router = new ModuloRouterFactory().getRouter(getRouteUrl("host = " + NetUtils.getLocalHost() + " & port = 20880" + " & modulo = 1",
+                "id", 2));
 
         //造提供者
         List<Invoker<String>> invokers = new ArrayList<Invoker<String>>();
-        invokers.add(new MockInvoker<String>());
-        invokers.add(new MockInvoker<String>());
-        invokers.add(new MockInvoker<String>());
+        // ip=本机ip, port=20880 都匹配
+        Invoker<String> invoker = new MockInvoker<String>(URL.valueOf("dubbo://" + NetUtils.getLocalHost() + ":20880/com.wpy.TestService"));
+        invokers.add(invoker);
 
-        //造参数
-        Class<?>[] classes = {ModuloRouterArgument.class};
-        Object[] arguments = {new ModuloRouterArgument(11)};
+        List<Invoker<String>> invokersNull = new ArrayList<Invoker<String>>();
 
-        //发起路由
+        //造会话域
+        Class<?>[] classes = {String.class};
+        RpcInvocation rpcInvocationNull = new RpcInvocation();
+        RpcInvocation rpcInvocationArgumentNull = new RpcInvocation("testMethod", classes, null);
+
+        //会话域为空
         List<Invoker<String>> fileredInvokers = router.route(invokers, URL.valueOf("consumer://" +
-                NetUtils.getLocalHost() + "/com.wpy.TestService"), new RpcInvocation("testMethod",
-                classes, arguments));
+                NetUtils.getLocalHost() + "/com.wpy.TestService"), rpcInvocationNull);
+        Assert.assertEquals(1, fileredInvokers.size());
 
-        //预期结果
-        Assert.assertEquals(0, fileredInvokers.size());
+        //参数为空/找不到参数
+        fileredInvokers = router.route(invokers, URL.valueOf("consumer://" +
+                NetUtils.getLocalHost() + "/com.wpy.TestService"), rpcInvocationArgumentNull);
+        Assert.assertEquals(1, fileredInvokers.size());
     }
 
     /**
-     * 测试返回所有符合条件的Invoker
+     * 没有找到除数对应的参数 则返回所有Invoker
      */
     @Test
     public void testRoute_ReturnAll() {
-        //本条路由条件 ip=本机ip, port=20880, modulo=1，dividend=2;
-        Router router = new ModuloRouterFactory().getRouter(getRouteUrl("host = " + NetUtils.getLocalHost() + " & modulo = 1",
-                ModuloRouterArgument.class.getName(), ModuloRouterArgument.class.getDeclaredFields()[0].getName(), 2));
+        //除数属性名为 ： id
+        Router router = new ModuloRouterFactory().getRouter(getRouteUrl("host != " + NetUtils.getLocalHost() + " & modulo = 1", "id", 2));
 
         //造提供者
         List<Invoker<String>> invokers = new ArrayList<Invoker<String>>();
@@ -87,9 +89,9 @@ public class ModuloRouterTest {
         invokers.add(invoker3);
 
         //造参数
-        Class<?>[] classes = {ModuloRouterArgument.class};
-        //11除2模为1 模匹配
-        Object[] arguments = {new ModuloRouterArgument(11)};
+        Class<?>[] classes = {String.class};
+        // json里没有id
+        Object[] arguments = {"{\"host\":11,\"name\":\"aaa\"}"};
 
         //发起路由
         List<Invoker<String>> fileredInvokers = router.route(invokers, URL.valueOf("consumer://" +
@@ -101,13 +103,15 @@ public class ModuloRouterTest {
     }
 
     /**
-     * RpcInvocation Null检验
+     * 默认 force=true
+     * 没有匹配上的则返回空
+     * 模没有匹配上
      */
     @Test
-    public void testRoute_NullParam() {
+    public void testRoute_NotMatch() {
         //本条路由条件 ip=本机ip, port=20880, modulo=1，dividend=2;
         Router router = new ModuloRouterFactory().getRouter(getRouteUrl("host = " + NetUtils.getLocalHost() + " & port = 20880" + " & modulo = 1",
-                ModuloRouterArgument.class.getName(), ModuloRouterArgument.class.getDeclaredFields()[0].getName(), 2));
+                "id", 2));
 
         //造提供者
         List<Invoker<String>> invokers = new ArrayList<Invoker<String>>();
@@ -115,38 +119,62 @@ public class ModuloRouterTest {
         Invoker<String> invoker = new MockInvoker<String>(URL.valueOf("dubbo://" + NetUtils.getLocalHost() + ":20880/com.wpy.TestService"));
         invokers.add(invoker);
 
-        List<Invoker<String>> invokersNull = new ArrayList<Invoker<String>>();
+        //造参数
+        Class<?>[] classes = {String.class};
+        //12除2模为0 模不匹配
+        Object[] arguments = {"{\"id\":12,\"name\":\"aaa\"}"};
 
-        //造会话域
-        Class<?>[] classes = {ModuloRouterArgument.class};
-        RpcInvocation rpcInvocationNull = new RpcInvocation();
-        RpcInvocation rpcInvocationArgumentNull = new RpcInvocation("testMethod", classes, null);
-        RpcInvocation rpcInvocationArgumentError = new RpcInvocation("testMethod", new Class[]{Integer.class}, null);
-
-        //会话域为空
+        //发起路由
         List<Invoker<String>> fileredInvokers = router.route(invokers, URL.valueOf("consumer://" +
-                NetUtils.getLocalHost() + "/com.wpy.TestService"), rpcInvocationNull);
-        Assert.assertEquals(0, fileredInvokers.size());
+                NetUtils.getLocalHost() + "/com.wpy.TestService"), new RpcInvocation("testMethod",
+                classes, arguments));
 
-        //参数为空/找不到参数
-        fileredInvokers = router.route(invokers, URL.valueOf("consumer://" +
-                NetUtils.getLocalHost() + "/com.wpy.TestService"), rpcInvocationArgumentNull);
-        Assert.assertEquals(0, fileredInvokers.size());
-
-        //参数错误
-        fileredInvokers = router.route(invokers, URL.valueOf("consumer://" +
-                NetUtils.getLocalHost() + "/com.wpy.TestService"), rpcInvocationArgumentError);
+        //预期结果
         Assert.assertEquals(0, fileredInvokers.size());
     }
 
     /**
+     * 设置 force = false
+     * 没有匹配上的则返回所有invoker
+     * 模没有匹配上
+     */
+    @Test
+    public void testRoute_force() {
+        //本条路由条件 ip=本机ip, port=20880, modulo=1，dividend=2;
+        URL url = getRouteUrl("host = " + NetUtils.getLocalHost() + " & port = 20880" + " & modulo = 1",
+                "id", 2);
+        url = url.addParameter("force", false);
+        Router router = new ModuloRouterFactory().getRouter(url);
+
+        //造提供者
+        List<Invoker<String>> invokers = new ArrayList<Invoker<String>>();
+        // ip=本机ip, port=20880 都匹配
+        Invoker<String> invoker = new MockInvoker<String>(URL.valueOf("dubbo://" + NetUtils.getLocalHost() + ":20880/com.wpy.TestService"));
+        invokers.add(invoker);
+
+        //造参数
+        Class<?>[] classes = {String.class};
+        //12除2模为0 模不匹配
+        Object[] arguments = {"{\"id\":12,\"name\":\"aaa\"}"};
+
+        //发起路由
+        List<Invoker<String>> fileredInvokers = router.route(invokers, URL.valueOf("consumer://" +
+                NetUtils.getLocalHost() + "/com.wpy.TestService"), new RpcInvocation("testMethod",
+                classes, arguments));
+
+        //预期结果
+        Assert.assertEquals(1, fileredInvokers.size());
+    }
+
+    /**
+     * 模一致的前提
      * 按照ip+port 过滤
      */
     @Test
     public void testRoute_FilterWithIpPort() {
         //本条路由条件 ip=本机ip, port=20880, modulo=1，dividend=2;
         Router router = new ModuloRouterFactory().getRouter(getRouteUrl("host = " + NetUtils.getLocalHost() + " & port = 20880" + " & modulo = 1",
-                ModuloRouterArgument.class.getName(), ModuloRouterArgument.class.getDeclaredFields()[0].getName(), 2));
+                "id", 2));
 
         //造提供者
         List<Invoker<String>> invokers = new ArrayList<Invoker<String>>();
@@ -161,9 +189,9 @@ public class ModuloRouterTest {
         invokers.add(invoker3);
 
         //造参数
-        Class<?>[] classes = {ModuloRouterArgument.class};
+        Class<?>[] classes = {String.class};
         //11除2模为1 模匹配
-        Object[] arguments = {new ModuloRouterArgument(11)};
+        Object[] arguments = {"{\"id\":11,\"name\":\"aaa\"}"};
 
         //发起路由
         List<Invoker<String>> fileredInvokers = router.route(invokers, URL.valueOf("consumer://" +
@@ -174,34 +202,6 @@ public class ModuloRouterTest {
         Assert.assertEquals(1, fileredInvokers.size());
     }
 
-    /**
-     * 对模进行过滤
-     */
-    @Test
-    public void testRoute_FilterWithModulo() {
-        //本条路由条件 ip=本机ip, port=20880, modulo=1，dividend=2;
-        Router router = new ModuloRouterFactory().getRouter(getRouteUrl("host = " + NetUtils.getLocalHost() + " & port = 20880" + " & modulo = 1",
-                ModuloRouterArgument.class.getName(), ModuloRouterArgument.class.getDeclaredFields()[0].getName(), 2));
-
-        //造提供者
-        List<Invoker<String>> invokers = new ArrayList<Invoker<String>>();
-        // ip=本机ip, port=20880 都匹配
-        Invoker<String> invoker = new MockInvoker<String>(URL.valueOf("dubbo://" + NetUtils.getLocalHost() + ":20880/com.wpy.TestService"));
-        invokers.add(invoker);
-
-        //造参数
-        Class<?>[] classes = {ModuloRouterArgument.class};
-        //12除2模为0 模不匹配
-        Object[] arguments = {new ModuloRouterArgument(12)};
-
-        //发起路由
-        List<Invoker<String>> fileredInvokers = router.route(invokers, URL.valueOf("consumer://" +
-                NetUtils.getLocalHost() + "/com.wpy.TestService"), new RpcInvocation("testMethod",
-                classes, arguments));
-
-        //预期结果
-        Assert.assertEquals(0, fileredInvokers.size());
-    }
 
     /**
      * 对ip+port+modulo进行一对一匹配分发
@@ -216,7 +216,7 @@ public class ModuloRouterTest {
                 "host = " + NetUtils.getLocalHost() + " & port = 20880" + " & modulo = 0" +
                         " => host = " + "192.168.1.1" + " & port = 20880" + " & modulo = 1" +
                         " => host = " + NetUtils.getLocalHost() + " & port = 20881" + " & modulo = 2",
-                ModuloRouterArgument.class.getName(), ModuloRouterArgument.class.getDeclaredFields()[0].getName(), 3));
+                "id", 3));
 
         //造提供者
         List<Invoker<String>> invokers = new ArrayList<Invoker<String>>();
@@ -231,13 +231,13 @@ public class ModuloRouterTest {
         invokers.add(invoker3);
 
         //造参数
-        Class<?>[] classes = {ModuloRouterArgument.class};
+        Class<?>[] classes = {String.class};
         //模为0
-        Object[] arguments0 = {new ModuloRouterArgument(12)};
+        Object[] arguments0 = {"{\"id\":12,\"name\":\"aaa\"}"};
         //模为1
-        Object[] arguments1 = {new ModuloRouterArgument(13)};
+        Object[] arguments1 = {"{\"id\":13,\"name\":\"aaa\"}"};
         //模为2
-        Object[] arguments2 = {new ModuloRouterArgument(14)};
+        Object[] arguments2 = {"{\"id\":14,\"name\":\"aaa\"}"};
 
 
         //模为0匹配第一个提供者
@@ -250,7 +250,7 @@ public class ModuloRouterTest {
 
         //模为1匹配第二个提供者
         fileredInvokers.clear();
-        fileredInvokers  = router.route(invokers, URL.valueOf("consumer://" +
+        fileredInvokers = router.route(invokers, URL.valueOf("consumer://" +
                 NetUtils.getLocalHost() + "/com.wpy.TestService"), new RpcInvocation("testMethod",
                 classes, arguments1));
         Assert.assertEquals(1, fileredInvokers.size());
@@ -267,5 +267,55 @@ public class ModuloRouterTest {
         Assert.assertEquals(20881, fileredInvokers.get(0).getUrl().getPort());
     }
 
+    /**
+     * 支持条件可以为 = 或 !=
+     * 多个值用逗号分隔，以星号结尾表示通配地址段
+     * 匹配规则跟官方提供的条件路由一致
+     *
+     */
+    @Test
+    public void testRoute_Multiple_Ip_Port() {
+        //本条路由条件 ip = 本机ip ip != 192.168.1.1,192.168.1.2
+        Router router = new ModuloRouterFactory().getRouter(getRouteUrl("host = " +NetUtils.getLocalHost() + " &host != 192.168.1.1,192.168.1.2 & port = 20880" + " & modulo = 1",
+                "id", 2));
+
+        //测试*匹配 本条路由条件 ip = 本机ip ip != 192.168.1.*
+        Router router1 = new ModuloRouterFactory().getRouter(getRouteUrl("host = " +NetUtils.getLocalHost() + " &host != 192.168.1.1,192.168.1.2 & port = 20880" + " & modulo = 1",
+                "id", 2));
+
+        //造提供者
+        List<Invoker<String>> invokers = new ArrayList<Invoker<String>>();
+        // ip=本机ip, port=20880 匹配
+        Invoker<String> invoker1 = new MockInvoker<String>(URL.valueOf("dubbo://" + NetUtils.getLocalHost() + ":20880/com.wpy.TestService"));
+        //ip = 192.168.1.1 port =20880 不匹配
+        Invoker<String> invoker2 = new MockInvoker<String>(URL.valueOf("dubbo://192.168.1.1:20880/com.wpy.TestService"));
+        //ip = 192.168.1.1 port =20880 不匹配
+        Invoker<String> invoker3 = new MockInvoker<String>(URL.valueOf("dubbo://192.168.1.2:20880/com.wpy.TestService"));
+        invokers.add(invoker1);
+        invokers.add(invoker2);
+        invokers.add(invoker3);
+
+        //造参数
+        Class<?>[] classes = {String.class};
+        //11除2模为1 模匹配
+        Object[] arguments = {"{\"id\":11,\"name\":\"aaa\"}"};
+
+        //路由
+        List<Invoker<String>> fileredInvokers = router.route(invokers, URL.valueOf("consumer://" +
+                NetUtils.getLocalHost() + "/com.wpy.TestService"), new RpcInvocation("testMethod",
+                classes, arguments));
+
+        //预期结果
+        Assert.assertEquals(1, fileredInvokers.size());
+
+        //路由
+        fileredInvokers.clear();
+        fileredInvokers = router1.route(invokers, URL.valueOf("consumer://" +
+                NetUtils.getLocalHost() + "/com.wpy.TestService"), new RpcInvocation("testMethod",
+                classes, arguments));
+
+        //预期结果
+        Assert.assertEquals(1, fileredInvokers.size());
+    }
 
 }
