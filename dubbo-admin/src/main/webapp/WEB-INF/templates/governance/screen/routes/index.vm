@@ -16,9 +16,11 @@
 	<th>$i18n.get("route.name"): <input type="text" onkeyup="searchTable('table_o', 1, this.value);" onclick="searchTable('table_o', 1, this.value);" />&nbsp;<img src="$rootContextPath.getURI("images/ico_search.png")" width="12" height="12" /></th>
     #if(!$service)
    	<th>$i18n.get("ServiceName"): <input type="text" onkeyup="searchTable('table_o', 2, this.value);" onclick="searchTable('table_o', 2, this.value);" />&nbsp;<img src="$rootContextPath.getURI("images/ico_search.png")" width="12" height="12" /></th>
-    <th width="50">$i18n.get("Priority")</th>
+    <th width="50">$i18n.get("routeType")</th>
+	<th width="50">$i18n.get("Priority")</th>
     <th width="100">$i18n.get("status"): <select onchange="searchTable('table_o', 4, this.value);" onclick="searchTable('table_o', 4, this.value);"><option value="">$i18n.get("all")</option><option value="$i18n.get("enabled")">$i18n.get("enabled")</option><option value="$i18n.get("disabled")">$i18n.get("disabled")</option></select></th>
 	#else
+	<th width="50">$i18n.get("routeType")</th>
    	<th width="50">$i18n.get("Priority")</th>
     <th width="100">$i18n.get("status"): <select onchange="searchTable('table_o', 3, this.value);" onclick="searchTable('table_o', 3, this.value);"><option value="">$i18n.get("all")</option><option value="$i18n.get("enabled")">$i18n.get("enabled")</option><option value="$i18n.get("disabled")">$i18n.get("disabled")</option></select></th>
 	#end
@@ -31,6 +33,7 @@
     #if(!$service)
     <td><a href="services/$route.service/routes">$route.service</a></td>
     #end
+    <td>$route.routeType</td>
 	<td>$route.priority</td>
 	<td>
     #if($route.enabled)
@@ -40,7 +43,12 @@
 	#end
 	</td>
 	<td>
-		<a href="routes/$route.id/routeselect"><img src="$rootContextPath.getURI("images/ico_show.png")" width="12" height="12" /><span class="ico_font">$i18n.get("proview")</span></a>
+		#if($route.routeType == "condition")
+            <a href="routes/$route.id/routeselect"><img src="$rootContextPath.getURI("images/ico_show.png")" width="12" height="12" /><span class="ico_font">$i18n.get("proview")</span></a>
+		#else
+            <a href=""><img src="$rootContextPath.getURI("images/ico_show.png")" width="12" height="12" /><span class="ico_font">$i18n.get("proview")</span></a>
+		#end
+
 		#if($currentUser.role != "G")
 		<span class="ico_line">|</span>
 		<a href="routes/$route.id/edit"><img src="$rootContextPath.getURI("images/ico_edit.png")" width="12" height="12" /><span class="ico_font">$i18n.get("edit")</span></a>
