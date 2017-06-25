@@ -393,21 +393,35 @@ public class Routes extends Restful {
 
                 } else if (context.get("routeType").equals("modulo")) {
                     route.setRouteType((String) context.get("routeType"));
-                    String[] hosts = (String[]) context.get("host");
-                    String[] ports = (String[]) context.get("port");
-                    String[] modulos = (String[]) context.get("modulo");
-                    String rule = "";
-                    for (int i = 0; i < hosts.length; i++) {
-                        rule += "host = " + hosts[i] + " & port = " + ports[i] + " & modulo = " + modulos[i];
-                        if(i != (hosts.length-1)){
-                            rule += " => ";
-                        }
-                    }
-                    if (rule.length() > MAX_RULE_LENGTH) {
-                        context.put("message", getMessage("rule is too long!"));
-                        return false;
-                    }
-                    route.setRule(rule);
+//                    Boolean isArray = true;
+//                    try {
+//                        String[] hosts = (String[]) context.get("host");
+//                    }catch (Exception e){
+//                        isArray =false;
+//                    }
+//
+//                    String rule = "";
+//
+//                    if(!isArray){
+//                        rule += "host = " + context.get("host") + " & port = " + context.get("port") + " & modulo = " + context.get("modulo");
+//                    }else {
+//
+//                        String[] hosts = (String[]) context.get("host");
+//                        String[] ports = (String[]) context.get("port");
+//                        String[] modulos = (String[]) context.get("modulo");
+//
+//                        for (int i = 0; i < hosts.length; i++) {
+//                            rule += "host = " + hosts[i] + " & port = " + ports[i] + " & modulo = " + modulos[i];
+//                            if (i != (hosts.length - 1)) {
+//                                rule += " => ";
+//                            }
+//                        }
+//                        if (rule.length() > MAX_RULE_LENGTH) {
+//                            context.put("message", getMessage("rule is too long!"));
+//                            return false;
+//                        }
+//                    }
+                    route.setRule((String) context.get("rule"));
                     route.setDivisorArgumentName((String) context.get("divisorArgumentName"));
                     route.setDividend(Integer.parseInt((String) context.get("dividend")));
                     Boolean b = Boolean.valueOf((String) context.get("force"));

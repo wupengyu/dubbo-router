@@ -224,42 +224,45 @@
                 <th>$i18n.get("force"): <font color='red'>*</font></th>
                 </th>
                 <td colspan="2">
-##                    <input type="checkbox" id="forceCheck" value="#if($route)$route.force#{else}#end"
-##                           checked="#if($route)$route.force#{else}#end"/> 选中为true<br/>
-##                    <input type="text" id="_force" value="#if($route)$route.force#{else}#end"/><br/>
-##                    <input type="hidden" id="force" value="$!force" name="force"
-##                           />
-                        <select id="force" onchange="if (this.value != '') { byId('force').value = this.value;}" onshow="">
-                                <option selected="#if($route && $route.force == true)selected#end"  value="true">true</option>
-                                <option selected="#if($route && $route.force == false)#end" value="false">false</option>
-                        </select>
+                    <select id="force" onchange="if (this.value != '') { byId('force').value = this.value;}" onshow="">
+                        <option selected="#if($route && $route.force == true)selected#end" value="true">true</option>
+                        <option selected="#if($route && $route.force == false)#end" value="false">false</option>
+                    </select>
                 </td>
                 <td><font color='blue'>$i18n.get("forceInfo")</font></td>
             </tr>
             <tr>
-                <td colspan="5">
-                    <table id="tb_rules">
-                        <tr>
-                            <th>$i18n.get("rule"): <font color='red'>*</font></th>
-                            <td>
-                                <span>host:&nbsp;&nbsp;  </span>
-                                <input style="width: 100px;" type="text" name="host" class="rule_host"/>
-                            </td>
-                            <td>
-                                <span>port:&nbsp;&nbsp;  </span>
-                                <input style="width: 50px;" type="text" name="port" class="rule_port"
-                                       onkeydown="return checkNumber();"/>
-                            </td>
-                            <td>
-                                <span>modulo:&nbsp;&nbsp;  </span>
-                                <input style="width: 100px;" type="text" name="modulo" class="rule_modulo"
-                                       onkeydown="return checkNumber();"/>
-                            </td>
-                        </tr>
-                    </table>
-
+                <th>$i18n.get("rule"): <font color='red'>*</font></th>
+                </th>
+                <td >
+                    <input type="hidden" id="rule" name="rule" value="$route.rule"/>$route.rule
                 </td>
-
+##                <td><font color='blue'>$i18n.get("divisorArgumentNameInfo")</font></td>
+##
+##                <td colspan="5">
+##                    <table id="tb_rules">
+##                        <tr>
+##                            <th>$i18n.get("rule"): <font color='red'>*</font></th>
+##                            <td>
+##                                <span>host:&nbsp;&nbsp;  </span>
+##                                <input style="width: 100px;" type="text" name="host" class="rule_host"/>
+##                            </td>
+##                            <td>
+##                                <span>port:&nbsp;&nbsp;  </span>
+##                                <input style="width: 50px;" type="text" name="port" class="rule_port"
+##                                       onkeydown="return checkNumber();"/>
+##                            </td>
+##                            <td>
+##                                <span>modulo:&nbsp;&nbsp;  </span>
+##                                <input style="width: 100px;" type="text" name="modulo" class="rule_modulo"
+##                                       onkeydown="return checkNumber();"/>
+##                            </td>
+##                        </tr>
+##                    </table>
+##
+##                </td>
+##                <input type="hidden" id="rule" name="rule"
+##                       value="#if($route)$route.rule#{else}#end"/>
             </tr>
         #end
         <tr>
@@ -277,106 +280,48 @@
 
 <script src="/js/jquery-1.4.2.min.js"></script>
 <script type="text/javascript">
-    function getRule() {
-        var exp = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.\*$/;
-        var exp2 = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5]).(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
+//    window.onload = function () {
+//        if (byId("routeType").value == "modulo") {
+//            initModule();
+//        }
+//    }
 
-        var size = $(".rule_host").size();
-
-        var rule = "";
-        if (size == 1) {
-            if ($(".rule_host").val() == null || $(".rule_port").val() == null || $(".rule_modulo").val() == null
-                    || $(".rule_host").val() == "" || $(".rule_port").val() == "" || $(".rule_modulo").val() == "") {
-                showAlert("rule里面的参数不能为空！");
-                return false;
-            }
-            rule += "host = " + $(".rule_host").val() + " & port = " + $(".rule_port").val() + " & modulo = " + $(".rule_modulo").val();
-            return rule;
-        }
-
-        var host = "";
-        var errorMsg = "";
-        $(".rule_host").each(function (i, e) {
-            if ($(e).val() == null || $(e).val() == "") {
-                showAlert("host不能为空！");
-                return;
-            }
-            var post_value = $(e).val();
-            if (post_value.trim() != '') {
-                var postvalue = post_value.split(",");
-                for (var j = 0; j < postvalue.length; j++) {
-                    if (!postvalue[j].match(exp2) && !postvalue[j].match(exp)) {
-                        errorMsg = "Match provider host : " + postvalue[j] + " is illegal";
-                        return false;
-                    }
-                }
-            }
-            host += $(e).val();
-            if (i != (size - 1)) {
-                host += ",";
-            }
-        })
-        if(errorMsg != "" ){
-            showAlert(errorMsg);
+    function initModule() {
+        var rule = byId("rule").value;
+        var ruleArr = new Array();
+        ruleArr = rule.split("=>");
+        if (ruleArr.length < 0) {
+            showAlert("rule is illegal");
             return;
+        } else if (ruleArr.length == 1) {
+            var host = findRuleParam('host',rule);
+            var port = findRuleParam('port',rule);
+            var module = findRuleParam('module',rule);
+            $("#host").val(host);
+            $("#port").val(port);
+            $("#module").val(module);
+        }else if(ruleArr.length > 1 ){
+            var hostArr = new Array();
+            var portArr = new Array();
+            var moduloArr = new Array();
+
         }
-        var hostArr = new Array();
-        hostArr = host.split(",");
-        if (hostArr.length < size) {
-            showAlert("有Host为空！");
-            return;
+    }
+
+    function findRuleParam(paramName,rule) {
+        var index = rule.indexOf('host');
+        if (index < 0) {
+            showAlert("rule is illegal");
+        }
+        var paramValue = '';
+        if(paramName == 'module'){
+            paramValue = rule.substring(index + 7,rule.length-1);
+        }else{
+            var valueIndex = rule.indexOf("&", index);
+            var paramValue = rule.substring(index,valueIndex - 1);
         }
 
-        var port = "";
-        $(".rule_port").each(function (i, e) {
-            if ($(e).val() == null || $(e).val() == "") {
-                showAlert("port不能为空！");
-                return;
-            }
-            port += $(e).val();
-            if (i != (size - 1)) {
-                port += ",";
-            }
-        })
-        var portArr = new Array();
-        portArr = port.split(",");
-        if (portArr.length < size) {
-            showAlert("有port为空！");
-            return;
-        }
-
-        var modulo = "";
-        $(".rule_modulo").each(function (i, e) {
-            if ($(e).val() == null || $(e).val() == "") {
-                showAlert("modulo不能为空！");
-                return;
-            }
-            modulo += $(e).val();
-            if (i != (size - 1)) {
-                modulo += ",";
-            }
-        })
-        var moduloArr = new Array();
-        moduloArr = modulo.split(",");
-        if (moduloArr.length < size) {
-            showAlert("有modulo为空！");
-            return;
-        }
-
-        for (var i = 0; i < size; i++) {
-            if (hostArr[i] == null || portArr[i] == null || moduloArr[i] == null
-                    || hostArr[i] == "" || portArr[i] == "" || moduloArr[i] == "") {
-                showAlert("rule里面的参数不能为空！");
-                return;
-            }
-            rule += "host = " + hostArr[i] + " & port = " + portArr[i] + " & modulo = " + moduloArr[i]
-            if (i != (size - 1)) {
-                rule += " => "
-            }
-        }
-        $("#rule").val(rule);
-//        alert(byId('rule').value);
-        return rule;
+        return paramValue;
     }
 
     function addRule() {
@@ -386,11 +331,6 @@
     }
     function check() {
 
-        var rule = getRule();
-        if (rule == null || rule == "") {
-            showAlert("rule不能为空！");
-            return false;
-        }
 
         if (byId('name').value.trim() == '') {
             showAlert("$i18n.get("PleaseInput", $i18n.get("route.name"))", 'name');
@@ -409,7 +349,16 @@
         var exp2 = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5]).(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
 
         if (byId('routeType').value == 'modulo') {
+            if (byId('dividend').value.trim() == '') {
+                showAlert("被除数不能为空！", 'dividend');
+                return false;
+            }
+            if (byId('dividend').value == 0) {
+                showAlert("被除数不能为0！", 'dividend');
+                return false;
+            }
 
+            checkRule();
         } else {
             var paddress = byId('providerHost').value;
             if (paddress.trim() != '') {
@@ -447,9 +396,111 @@
         return (obj.value.length < mlength);
     }
 
-    $("#forceCheck").click(function () {
-        $("#_force").val($("#forceCheck").attr("checked"));
-        alert($("#_force").val());
-    })
+    function checkRule() {
+        var exp = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.\*$/;
+        var exp2 = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5]).(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
+
+        var size = $(".rule_host").size();
+
+        var rule = "";
+        if (size == 1) {
+            if ($(".rule_host").val() == null || $(".rule_port").val() == null || $(".rule_modulo").val() == null
+                    || $(".rule_host").val() == "" || $(".rule_port").val() == "" || $(".rule_modulo").val() == "") {
+                showAlert("rule里面的参数不能为空！");
+                return false;
+            }
+            rule += "host = " + $(".rule_host").val() + " & port = " + $(".rule_port").val() + " & modulo = " + $(".rule_modulo").val();
+            return rule;
+        }
+
+        var host = "";
+        var errorMsg = "";
+        $(".rule_host").each(function (i, e) {
+            if ($(e).val() == null || $(e).val() == "") {
+                errorMsg = "host不能为空！";
+                return;
+            }
+            var post_value = $(e).val();
+            if (post_value.trim() != '') {
+                var postvalue = post_value.split(",");
+                for (var j = 0; j < postvalue.length; j++) {
+                    if (!postvalue[j].match(exp2) && !postvalue[j].match(exp)) {
+                        errorMsg = "Match host : " + postvalue[j] + " is illegal";
+                        return;
+                    }
+                }
+            }
+            host += $(e).val();
+            if (i != (size - 1)) {
+                host += ",";
+            }
+        })
+        if (errorMsg != "") {
+            showAlert(errorMsg);
+            return;
+        }
+
+        var hostArr = new Array();
+        hostArr = host.split(",");
+        if (hostArr.length < size) {
+            errorMsg = "有Host为空！";
+            return;
+        }
+
+        var port = "";
+        $(".rule_port").each(function (i, e) {
+            if ($(e).val() == null || $(e).val() == "") {
+                errorMsg = "port不能为空！";
+                return;
+            }
+            port += $(e).val();
+            if (i != (size - 1)) {
+                port += ",";
+            }
+        })
+        var portArr = new Array();
+        portArr = port.split(",");
+        if (portArr.length < size) {
+            errorMsg = "有port为空！";
+            return;
+        }
+
+        var modulo = "";
+        $(".rule_modulo").each(function (i, e) {
+            if ($(e).val() == null || $(e).val() == "") {
+                errorMsg = "modulo不能为空！";
+                return;
+            }
+            modulo += $(e).val();
+            if (i != (size - 1)) {
+                modulo += ",";
+            }
+        })
+        var moduloArr = new Array();
+        moduloArr = modulo.split(",");
+        if (moduloArr.length < size) {
+            errorMsg = "有modulo为空！";
+            return;
+        }
+        if (errorMsg != "") {
+            showAlert(errorMsg);
+            return;
+        }
+
+
+        for (var i = 0; i < size; i++) {
+            if (hostArr[i] == null || portArr[i] == null || moduloArr[i] == null
+                    || hostArr[i] == "" || portArr[i] == "" || moduloArr[i] == "") {
+                showAlert("rule里面的参数不能为空！");
+                return;
+            }
+            rule += "host = " + hostArr[i] + " & port = " + portArr[i] + " & modulo = " + moduloArr[i]
+            if (i != (size - 1)) {
+                rule += " => "
+            }
+        }
+        $("#rule").val(rule);
+        return rule;
+    }
 
 </script>
