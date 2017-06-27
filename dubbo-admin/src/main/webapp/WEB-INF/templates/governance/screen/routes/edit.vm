@@ -232,37 +232,39 @@
                 <td><font color='blue'>$i18n.get("forceInfo")</font></td>
             </tr>
             <tr>
-                <th>$i18n.get("rule"): <font color='red'>*</font></th>
-                </th>
-                <td >
-                    <input type="hidden" id="rule" name="rule" value="$route.rule"/>$route.rule
+            ##                <th>$i18n.get("rule"): <font color='red'>*</font></th>
+            ##                </th>
+            ##                <td >
+            ##                    <input type="hidden" id="rule" name="rule" value="$route.rule"/>$route.rule
+            ##                </td>
+            ##                <td><font color='blue'>$i18n.get("divisorArgumentNameInfo")</font></td>
+            ##
+                <td colspan="5">
+                    #foreach ($m in $route.rule.split("=>"))
+                        <table id="tb_rules">
+                            <tr>
+                                <th>$i18n.get("rule"): <font color='red'>*</font></th>
+                                <td>
+                                    <span>host:&nbsp;&nbsp;  </span>
+                                    <input style="width: 100px;" type="text" name="host"  class="rule_host"/>
+                                </td>
+                                <td>
+                                    <span>port:&nbsp;&nbsp;  </span>
+                                    <input style="width: 50px;" type="text" name="port" class="rule_port"
+                                           onkeydown="return checkNumber();"/>
+                                </td>
+                                <td>
+                                    <span>modulo:&nbsp;&nbsp;  </span>
+                                    <input style="width: 100px;" type="text" name="modulo" class="rule_modulo"
+                                           onkeydown="return checkNumber();"/>
+                                </td>
+                            </tr>
+                        </table>
+                    #end
                 </td>
-##                <td><font color='blue'>$i18n.get("divisorArgumentNameInfo")</font></td>
-##
-##                <td colspan="5">
-##                    <table id="tb_rules">
-##                        <tr>
-##                            <th>$i18n.get("rule"): <font color='red'>*</font></th>
-##                            <td>
-##                                <span>host:&nbsp;&nbsp;  </span>
-##                                <input style="width: 100px;" type="text" name="host" class="rule_host"/>
-##                            </td>
-##                            <td>
-##                                <span>port:&nbsp;&nbsp;  </span>
-##                                <input style="width: 50px;" type="text" name="port" class="rule_port"
-##                                       onkeydown="return checkNumber();"/>
-##                            </td>
-##                            <td>
-##                                <span>modulo:&nbsp;&nbsp;  </span>
-##                                <input style="width: 100px;" type="text" name="modulo" class="rule_modulo"
-##                                       onkeydown="return checkNumber();"/>
-##                            </td>
-##                        </tr>
-##                    </table>
-##
-##                </td>
-##                <input type="hidden" id="rule" name="rule"
-##                       value="#if($route)$route.rule#{else}#end"/>
+
+                <input type="hidden" id="rule" name="rule"
+                       value="#if($route)$route.rule#{else}#end"/>
             </tr>
         #end
         <tr>
@@ -280,13 +282,8 @@
 
 <script src="/js/jquery-1.4.2.min.js"></script>
 <script type="text/javascript">
-//    window.onload = function () {
-//        if (byId("routeType").value == "modulo") {
-//            initModule();
-//        }
-//    }
 
-    function initModule() {
+    $(function () {
         var rule = byId("rule").value;
         var ruleArr = new Array();
         ruleArr = rule.split("=>");
@@ -294,31 +291,50 @@
             showAlert("rule is illegal");
             return;
         } else if (ruleArr.length == 1) {
-            var host = findRuleParam('host',rule);
-            var port = findRuleParam('port',rule);
-            var module = findRuleParam('module',rule);
-            $("#host").val(host);
-            $("#port").val(port);
-            $("#module").val(module);
-        }else if(ruleArr.length > 1 ){
-            var hostArr = new Array();
-            var portArr = new Array();
-            var moduloArr = new Array();
-
+            var host = findRuleParam('host', rule);
+            var port = findRuleParam('port', rule);
+            var modulo = findRuleParam('modulo', rule);
+            $(".rule_host").val(host);
+            $(".rule_port").val(port);
+            $(".rule_modulo").val(modulo);
+        } else if (ruleArr.length > 1) {
+            for (var i = 0; i < ruleArr.length; i++) {
+                var host = findRuleParam('host', ruleArr[i]);
+                var port = findRuleParam('port', ruleArr[i]);
+                var modulo = findRuleParam('modulo', ruleArr[i]);
+                $(".rule_host").each(function (a, e) {
+                    if (i == a) {
+                        $(e).val(host);
+                    }
+                })
+                $(".rule_port").each(function (a, e) {
+                    if (i == a) {
+                        $(e).val(port);
+                    }
+                })
+                $(".rule_modulo").each(function (a, e) {
+                    if (i == a) {
+                        $(e).val(modulo);
+                    }
+                })
+            }
+            ;
         }
-    }
+    });
 
-    function findRuleParam(paramName,rule) {
-        var index = rule.indexOf('host');
+    function findRuleParam(paramName, rule) {
+        var index = rule.indexOf(paramName);
         if (index < 0) {
             showAlert("rule is illegal");
         }
         var paramValue = '';
-        if(paramName == 'module'){
-            paramValue = rule.substring(index + 7,rule.length-1);
-        }else{
+        if (paramName == 'modulo') {
+            var offsets = 9;
+            paramValue = rule.substring(index + offsets, rule.length);
+        } else {
             var valueIndex = rule.indexOf("&", index);
-            var paramValue = rule.substring(index,valueIndex - 1);
+            var offsets = 7;
+            var paramValue = rule.substring(index + offsets, valueIndex - 1);
         }
 
         return paramValue;
@@ -329,6 +345,7 @@
         var tr = $(tbody).children()[0];
         tbody.appendChild($(tr).clone()[0])
     }
+
     function check() {
 
 
