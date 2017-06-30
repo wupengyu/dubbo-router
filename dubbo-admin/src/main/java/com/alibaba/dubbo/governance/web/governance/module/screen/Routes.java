@@ -203,6 +203,7 @@ public class Routes extends Restful {
             if (StringUtils.isNotEmpty((String) context.get("priority"))) {
                 route.setPriority(Integer.parseInt((String) context.get("priority")));
             }
+            route.setRouteType((String) context.get("routeType"));
 
             //生成rule
             if (context.get("routeType").equals(Route.CONDITION_RULE)) {
@@ -245,7 +246,6 @@ public class Routes extends Restful {
                 route.setRule(routeRule.toString());
                 route.setRouteType((String) context.get("routeType"));
             } else if (context.get("routeType").equals("modulo")) {
-                route.setRouteType((String) context.get("routeType"));
                 Boolean isArray = true;
                 try {
                     String[] hosts = (String[]) context.get("host");
@@ -325,6 +325,7 @@ public class Routes extends Restful {
             route.setId(Long.valueOf(idStr));
             route.setPriority(Integer.parseInt((String) context.get("priority")));
             route.setEnabled(oldRoute.isEnabled());
+            route.setRouteType((String) context.get("routeType"));
 
             //判断参数，拼凑rule
             if (StringUtils.isNotEmpty((String) context.get("name"))) {
@@ -392,7 +393,7 @@ public class Routes extends Restful {
                     route.setRule(result.toString());
 
                 } else if (context.get("routeType").equals("modulo")) {
-                    route.setRouteType((String) context.get("routeType"));
+
 //                    Boolean isArray = true;
 //                    try {
 //                        String[] hosts = (String[]) context.get("host");

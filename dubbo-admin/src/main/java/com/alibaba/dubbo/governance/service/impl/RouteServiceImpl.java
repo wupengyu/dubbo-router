@@ -15,16 +15,16 @@
  */
 package com.alibaba.dubbo.governance.service.impl;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.governance.service.RouteService;
 import com.alibaba.dubbo.governance.sync.util.Pair;
 import com.alibaba.dubbo.governance.sync.util.SyncUtils;
 import com.alibaba.dubbo.registry.common.domain.Route;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * IbatisRouteService
@@ -72,10 +72,9 @@ public class RouteServiceImpl extends AbstractService implements RouteService {
             return;
         }
 
-        URL newRoute = oldRoute.removeParameter("enabled");
         registryService.unregister(oldRoute);
+        URL newRoute= oldRoute.addParameter("enabled", true);
         registryService.register(newRoute);
-        
     }
 
     public void disableRoute(Long id) {

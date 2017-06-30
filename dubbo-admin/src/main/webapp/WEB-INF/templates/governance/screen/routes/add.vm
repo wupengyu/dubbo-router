@@ -6,11 +6,13 @@
 <form id="df" action="../routes" method="POST" onsubmit="return check();">
     <table cellpadding="0" cellspacing="0" class="info">
         <tr>
-            <th width="100">路由类型: </th>
+            <th width="100">路由类型:</th>
             <td colspan="2">
-                <select id="routeType" class="routeType" name="routeType" onshow="" >
-                    <option selected="#if($route && ($route.routeType || $route.routeType == 'condition' || $route.routeType == ''))selected#{else}selected#end"  value="condition">条件路由</option>
-                    <option   value="modulo">取模路由</option>
+                <select id="routeType" class="routeType" name="routeType" onshow="">
+                    <option selected="#if($route && ($route.routeType || $route.routeType ==
+                        'condition' || $route.routeType == ''))selected#{else}selected#end" value="condition">条件路由
+                    </option>
+                    <option value="modulo">取模路由</option>
                 </select>
             </td>
         </tr>
@@ -207,7 +209,7 @@
             <th>$i18n.get("force"): <font color='red'>*</font></th>
             </th>
             <td colspan="2">
-                <select id="force" onchange="if (this.value != '') { byId('force').value = this.value;}" >
+                <select id="force" onchange="if (this.value != '') { byId('force').value = this.value;}">
                     <option selected="selected" value="true">true</option>
                     <option value="false">false</option>
                 </select>
@@ -237,13 +239,16 @@
                 </table>
 
             </td>
-
+            <input type="hidden" id="rule" name="rule"
+                   value="#if($route)$route.rule#{else}#end"/>
         </tr>
 
         <tr>
             <td colspan="4">
-                <div class="btn">
-                    <a href="javascript:addRule()">添加规则</a>
+                <div class="tr_m" hidden>
+                    <div class="btn">
+                        <a href="javascript:addRule()">添加规则</a>
+                    </div>
                 </div>
                 <div class="btn"><a href="#" onclick="if(check()){document.getElementById('df').submit();}">$i18n.get(
                     "save")</a></div>
@@ -257,10 +262,10 @@
 <script type="text/javascript">
 
     $("#routeType").change(function () {
-        if($("#routeType").val() == "condition"){
+        if ($("#routeType").val() == "condition") {
             $(".tr_m").hide();
             $(".tr_c").show();
-        }else if($("#routeType").val() == "modulo"){
+        } else if ($("#routeType").val() == "modulo") {
             $(".tr_c").hide();
             $(".tr_m").show();
         }
@@ -284,11 +289,6 @@
     }
 
     function check() {
-        var rule = checkRule();
-        if (rule == null || rule == "") {
-            showAlert("rule不能为空！");
-            return false;
-        }
 
         if (byId('name').value.trim() == '') {
             showAlert("$i18n.get("PleaseInput")$i18n.get("route.name")", 'name');
@@ -312,7 +312,11 @@
                 return false;
             }
 
-            checkRule();
+            var rule = checkRule();
+            if (rule == null || rule == "") {
+                showAlert("rule不能为空！");
+                return false;
+            }
         } else {
             var exp = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.\*$/;
             var exp2 = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5]).(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
@@ -374,7 +378,7 @@
         var errorMsg = "";
         $(".rule_host").each(function (i, e) {
             if ($(e).val() == null || $(e).val() == "") {
-                errorMsg ="host不能为空！";
+                errorMsg = "host不能为空！";
                 return;
             }
             var post_value = $(e).val();
@@ -383,7 +387,7 @@
                 for (var j = 0; j < postvalue.length; j++) {
                     if (!postvalue[j].match(exp2) && !postvalue[j].match(exp)) {
                         errorMsg = "Match host : " + postvalue[j] + " is illegal";
-                        return ;
+                        return;
                     }
                 }
             }
@@ -407,7 +411,7 @@
         var port = "";
         $(".rule_port").each(function (i, e) {
             if ($(e).val() == null || $(e).val() == "") {
-               errorMsg = "port不能为空！";
+                errorMsg = "port不能为空！";
                 return;
             }
             port += $(e).val();

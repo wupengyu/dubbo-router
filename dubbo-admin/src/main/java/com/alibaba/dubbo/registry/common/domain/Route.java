@@ -252,7 +252,7 @@ public class Route extends Entity {
                     + "&name=" + getName() + "&" + Constants.RULE_KEY + "=" + URL.encode(getRule())
                     + (group == null ? "" : "&" + Constants.GROUP_KEY + "=" + group)
                     + (version == null ? "" : "&" + Constants.VERSION_KEY + "=" + version));
-            System.out.println("-----------" + url.toString());
+//            System.out.println("modulo rule :  " + url.toString());
             return url;
         }else if(routeType.equals(CONDITION_RULE)){
             return URL.valueOf(Constants.ROUTE_PROTOCOL + "://" + Constants.ANYHOST_VALUE + "/" + path

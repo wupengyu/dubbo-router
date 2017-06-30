@@ -129,7 +129,6 @@ public class SyncUtils {
         r.setPriority(url.getParameter(Constants.PRIORITY_KEY, 0));
         r.setEnabled(url.getParameter(Constants.ENABLED_KEY, true));
         r.setRule(url.getParameterAndDecoded(Constants.RULE_KEY));
-
         return r;
     }
 
